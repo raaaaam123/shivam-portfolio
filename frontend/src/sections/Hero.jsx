@@ -363,8 +363,8 @@ export default function Hero() {
               Contact Me
             </a>
             <a
-              href="/resume.pdf"
-              download="Shivam-Prajapati-Resume.pdf"
+              href="/resume-2026.pdf"
+              download="Shivam-Prajapati-Resume-2026.pdf"
               className="group inline-flex w-full items-center justify-center gap-2 rounded-full border border-edge bg-panel/60 px-6 py-3 text-sm font-semibold text-soft backdrop-blur transition-all hover:border-primary/50 hover:bg-panel active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none sm:w-auto"
             >
               <IconDownload className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
