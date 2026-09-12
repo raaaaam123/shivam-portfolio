@@ -1,79 +1,56 @@
 import { Resend } from "resend";
 
 const REQUEST_TIMEOUT_MS = 25000;
+const TO_EMAIL = "collegeuse.it@gmail.com";
+const FROM_EMAIL = "onboarding@resend.dev";
 
-export default async function handler(request, response) {
-  const isWebRequest =
-    typeof Request !== "undefined" && request instanceof Request;
-
-  const respond = (status, body) => {
-    if (status === 204) {
-      if (isWebRequest) {
-        return new Response(null, { status: 204 });
-      }
-      response.status(204).end();
-      return undefined;
-    }
-
-    if (isWebRequest) {
-      return Response.json(body, { status });
-    }
-
-    response.status(status).json(body);
-    return undefined;
-  };
-
+export default async function handler(req, res) {
   try {
-    if (request.method === "OPTIONS") {
-      return respond(204);
+    if (req.method === "OPTIONS") {
+      res.status(204).end();
+      return;
     }
 
-    if (request.method !== "POST") {
-      return respond(405, {
+    if (req.method !== "POST") {
+      res.status(405).json({
         ok: false,
         message: "Method not allowed. Use POST.",
       });
+      return;
     }
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      return respond(500, {
+      res.status(500).json({
         ok: false,
         message:
           "RESEND_API_KEY is not set on the server. Contact the site owner.",
       });
+      return;
     }
 
     let body;
     try {
-      body = await readRequestBody(request);
+      body = await readRequestBody(req);
     } catch {
-      return respond(400, { ok: false, message: "Invalid request body." });
+      res.status(400).json({ ok: false, message: "Invalid request body." });
+      return;
     }
 
     const { name, email, subject, message } = body ?? {};
     if (!name || !email || !subject || !message) {
-      return respond(400, {
+      res.status(400).json({
         ok: false,
         message: "All fields (name, email, subject, message) are required.",
       });
-    }
-
-    const to = process.env.CONTACT_TO_EMAIL;
-    const from = process.env.CONTACT_FROM_EMAIL;
-    if (!to || !from) {
-      return respond(500, {
-        ok: false,
-        message:
-          "CONTACT_TO_EMAIL and CONTACT_FROM_EMAIL must be set on the server.",
-      });
+      return;
     }
 
     const resend = new Resend(apiKey);
     const { error } = await withTimeout(
       resend.emails.send({
-        from,
-        to,
+        from: FROM_EMAIL,
+        to: TO_EMAIL,
         replyTo: email,
         subject: `${subject} — from ${name}`,
         html: `
@@ -99,35 +76,37 @@ export default async function handler(request, response) {
 
     if (error) {
       console.error("[send-email]:", error);
-      return respond(500, {
+      res.status(500).json({
         ok: false,
         message: "Could not send the email. Please try again later.",
       });
+      return;
     }
 
-    return respond(200, { ok: true });
+    res.status(200).json({ ok: true });
   } catch (err) {
     console.error("[send-email]:", err);
-    return respond(500, {
+    res.status(500).json({
       ok: false,
       message: "Could not send the email. Please try again later.",
     });
   }
 }
 
-async function readRequestBody(request) {
-  if (typeof request.json === "function") {
-    return await request.json();
-  }
-
-  const text = await new Promise((resolve, reject) => {
+function readRequestBody(req) {
+  return new Promise((resolve, reject) => {
     const chunks = [];
-    request.on("data", (chunk) => chunks.push(chunk));
-    request.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-    request.on("error", reject);
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => {
+      const text = Buffer.concat(chunks).toString("utf8");
+      try {
+        resolve(text ? JSON.parse(text) : {});
+      } catch {
+        reject(new Error("Invalid JSON body"));
+      }
+    });
+    req.on("error", reject);
   });
-
-  return text ? JSON.parse(text) : {};
 }
 
 function withTimeout(promise, ms) {
