@@ -1,11 +1,11 @@
 const certifications = [
   {
     id: 1,
-    title: "100 Days Internship on Web Development",
+    title: "6 Months Internship on Web Development",
     issuer: "Analyze Infotech, Lucknow",
-    period: "February 2025 – May 2025",
+    period: "September 2025 – March 2026",
     description:
-      "Completed a 100-day internship program covering web development fundamentals, the MERN stack and building a real-world Student Information System.",
+      "Completed a 6-Months internship program covering web development fundamentals, the MERN stack and building a real-world Student Information System.",
   },
 ];
 
